@@ -1,0 +1,27 @@
+{
+  "player": {
+    "name": "Aethros",
+    "level": 1,
+    "hp_current": 85,
+    "hp_max": 120,
+    "atk": 15,
+    "intelligence": 4,
+    "defense": 10,
+    "agility": 6,
+    "crit_chance": 0.1
+  },
+  "inventory": {
+    "items": [
+      {"name": "Potion de soin", "type": "HealthPotion"},
+      {"name": "Bombe", "type": "Bomb"},
+      {"name": "Antidote", "type": "Antidote"}
+    ],
+    "equipped_weapon": {"name": "Épée", "type": "Weapon"},
+    "equipped_armor": {"name": "Armure de cuir", "type": "Armor"}
+  },
+  "quest": {
+    "state": 1,
+    "has_dungeon_key": true
+  },
+  "current_zone": "forest"
+}

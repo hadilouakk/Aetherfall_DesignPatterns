@@ -1,111 +1,137 @@
-Aetherfall – Mini RPG (Design Patterns)
-Description
+# Aetherfall – Mini RPG (Design Patterns)
 
-Aetherfall est un mini RPG en console développé en Python dans le cadre du module Design Patterns (Master 2). Le projet met en œuvre plusieurs patterns d’architecture logicielle afin de structurer un moteur de combat tour par tour extensible, maintenable et évolutif. Le joueur peut choisir son nom, sélectionner une arme, décider de son action à chaque tour (attaque ou défense, éventuellement compétence), et combattre des ennemis générés via une factory. Le système inclut également des effets de statut comme le poison.
+## Description
 
-Architecture du projet
+Aetherfall est un mini RPG en console développé en Python dans le cadre du module Design Patterns (Master 2).
+Le joueur choisit une classe (Guerrier, Mage ou Voleur), explore trois zones, combat des ennemis en tour par tour,
+gère son inventaire et progresse dans une quête principale jusqu'au boss final.
 
-Le projet est organisé en plusieurs modules correspondant aux responsabilités principales :
+Le projet met en œuvre plusieurs patterns d'architecture logicielle pour garder le code extensible et maintenable.
 
-main.py : point d’entrée et orchestration des tests et du combat interactif
+## Lancer le projet
 
-observer/ : gestion des événements et des logs
+```bash
+git clone https://github.com/hadilouakk/Aetherfall_DesignPatterns.git
+cd Aetherfall_DesignPatterns
+python main.py
+```
 
-factory/ : création des ennemis et des armes
+## Lancer les tests
 
-commande/ : commandes, moteur de combat, contexte et système de dégâts
+```bash
+python -m unittest tests.test_aetherfall -v
+```
 
-strategy/ : ennemis, IA, compétences et effets de statut
+## Architecture du projet
 
-Cette séparation permet de respecter le principe de responsabilité unique et de faciliter l’évolution du projet.
+```
+Aetherfall_DesignPatterns/
+├── main.py                  # Point d'entrée
+├── commande/
+│   ├── commands.py          # Command ABC, AttackCommand, DefendCommand
+│   ├── combat_engine.py     # Boucle de combat tour par tour
+│   ├── context.py           # Contexte de bataille (Battle)
+│   ├── damage_system.py     # Calcul des dégâts, critiques, défense
+│   ├── equipe.py            # EquipWeaponCommand
+│   ├── skill_command.py     # SkillCommand
+│   └── use_item_command.py  # UseItemCommand (consommables)
+├── factory/
+│   ├── enemy_factory.py     # Création des ennemis
+│   ├── weapon_factory.py    # Création des armes
+│   └── player_factory.py    # Création Guerrier / Mage / Voleur
+├── observer/
+│   ├── event_bus.py         # Pub/sub pour les événements
+│   └── console_logger.py    # Affichage découplé
+├── strategy/
+│   ├── enemy.py             # Classe Enemy + Wolf, Skeleton, Bandit
+│   ├── boss.py              # CorruptedChampion, DungeonGuardian (2 phases)
+│   ├── enemyAI.py           # IA ennemis (Agressive, defensive)
+│   ├── skills.py            # Skill ABC + Fireball
+│   ├── class_skills.py      # Compétences des 3 classes
+│   ├── items.py             # Weapon (dataclass)
+│   ├── armors.py            # Armor (dataclass)
+│   ├── consumables.py       # Potion, Antidote, Bombe
+│   ├── inventory.py         # Inventaire (10 slots, équipement)
+│   ├── status_effects.py    # StatusEffect ABC + Poison
+│   ├── shield_effect.py     # Bouclier (absorbe les dégâts)
+│   ├── stun_effect.py       # Étourdissement (skip le tour)
+│   └── player.py            # Classes joueur (non utilisé dans main)
+├── exploration/
+│   ├── zones.py             # Village, Forêt, Donjon
+│   ├── events.py            # Combat, Coffre, Marchand, Dialogue
+│   └── quest.py             # Quête principale (3 états)
+├── persistence/
+│   └── save_manager.py      # Sauvegarde / chargement JSON
+├── tests/
+│   └── test_aetherfall.py   # 21 tests unitaires
+├── savegame_example.json    # Exemple de sauvegarde
+└── UML.png                  # Diagramme UML
+```
 
-Design Patterns utilisés
+## Design Patterns utilisés
 
-Observer Pattern
-Implémenté via EventBus et ConsoleLogger. Le moteur de combat publie des événements de type "log" sans dépendre directement de print. Les loggers s’abonnent aux événements et affichent les messages. Cela permet un découplage entre la logique métier et l’affichage.
+**Observer** – `EventBus` + `ConsoleLogger`. Le moteur de combat publie des événements sans dépendre de `print`. Les loggers s'abonnent et affichent. Découplage logique métier / affichage.
 
-Factory Pattern
-EnemyFactory et WeaponFactory centralisent la création des objets (Wolf, Skeleton, Bandit, armes). Cela évite de disperser la logique d’instanciation dans le code et facilite l’ajout de nouveaux types d’ennemis ou d’armes.
+**Factory** – `EnemyFactory`, `WeaponFactory`, `PlayerFactory`. Centralise la création des objets. Ajouter un ennemi ou une arme = ajouter une entrée dans le mapping, c'est tout.
 
-Command Pattern
-Chaque action est encapsulée dans un objet commande : AttackCommand, DefendCommand, SkillCommand, EquipWeaponCommand. Le moteur de combat exécute des commandes sans connaître leur implémentation interne. Ce pattern permet d’ajouter de nouvelles actions sans modifier la boucle principale.
+**Command** – Chaque action est un objet : `AttackCommand`, `DefendCommand`, `SkillCommand`, `UseItemCommand`, `EquipWeaponCommand`. Le moteur exécute des commandes sans connaître leur implémentation.
 
-Strategy Pattern
-Utilisé pour l’intelligence artificielle des ennemis (par exemple Agressive) et pour les compétences (comme Fireball). Les comportements sont interchangeables et extensibles sans modifier les classes existantes.
+**Strategy** – IA des ennemis (`Agressive`, `defensive`, `BossAI`) et compétences (`Fireball`, `CoupPuissant`, etc.). Comportements interchangeables sans modifier les classes existantes.
 
-Gestion des états temporaires
-Le système de défense et les effets de statut (Poison) reposent sur des états internes modifiés temporairement. Les effets sont appliqués en fin de tour, leur durée est décrémentée, puis ils sont supprimés lorsqu’ils expirent.
+## Classes jouables
 
-Moteur de combat
+| Classe | PV | ATK | INT | DEF | AGI | Crit | Compétences |
+|---|---|---|---|---|---|---|---|
+| Guerrier | 120 | 15 | 4 | 10 | 6 | 10% | Coup puissant, Charge héroïque |
+| Mage | 80 | 5 | 18 | 5 | 8 | 5% | Boule de feu, Bouclier arcanique |
+| Voleur | 95 | 12 | 6 | 6 | 16 | 25% | Attaque sournoise, Esquive parfaite |
 
-Le CombatEngine gère la boucle principale du combat. Tant que le joueur et l’ennemi sont vivants, le moteur exécute les étapes suivantes :
+## Bestiaire
 
-Affichage du numéro du tour
+| Ennemi | Type | PV | Particularité |
+|---|---|---|---|
+| Loup sauvage | Standard | 50 | Rapide, attaques multiples |
+| Squelette | Standard | 60 | Résistant aux physiques |
+| Bandit | Standard | 55 | Critique élevé |
+| Champion corrompu | Élite | 120 | Peut empoisonner |
+| Gardien du donjon | Boss | 200 | 2 phases (enragé sous 50% PV) |
 
-Récupération et exécution de la commande du joueur
+## Effets de statut
 
-Vérification de l’état de l’ennemi
+- **Poison** – dégâts fixes chaque tour, durée limitée
+- **Bouclier** – absorbe un montant de dégâts avant de disparaître
+- **Étourdissement** – la cible saute son prochain tour
 
-Récupération et exécution de la commande de l’ennemi
+Chaque statut gère sa propre logique via polymorphisme (pas de if/else dans le moteur de combat).
 
-Application des effets de fin de tour (poison, etc.)
+## Inventaire
 
-Réinitialisation des états temporaires comme la défense
+- 10 slots maximum
+- 1 arme + 1 armure équipables simultanément
+- Consommables : Potion de soin, Antidote, Bombe
+- L'équipement applique ses bonus directement aux stats
 
-Incrémentation du compteur de tour
+## Exploration
 
-Cette structure sépare clairement la logique de contrôle du combat des actions concrètes effectuées.
+3 zones avec événements aléatoires ou scriptés :
+- **Village** – zone safe, marchand, PNJ de quête
+- **Forêt** – combats aléatoires, coffres, clé du donjon
+- **Donjon** – 2 salles + boss final (nécessite la clé)
 
-Système de dégâts
+## Quête principale
 
-Le DamageSystem calcule les dégâts en tenant compte :
+1. Trouver la Clé du Donjon (explorer la Forêt)
+2. Entrer dans le Donjon
+3. Vaincre le Gardien du Donjon
 
-de l’attaque totale (statistiques de base + bonus d’arme)
+## Sauvegarde
 
-de la défense de la cible
+Format JSON, structure plate. Sauvegarde les stats du joueur, l'inventaire, la progression de quête et la zone actuelle. Voir `savegame_example.json` pour un exemple.
 
-du taux de critique
+## Tests
 
-de l’état de défense
+21 tests couvrant : combat, statuts (poison/bouclier/stun), inventaire, quête, sauvegarde/chargement, boss 2 phases, création des classes.
 
-des éventuels effets actifs
-
-La formule simplifiée est : dégâts = max(1, attaque_totale - défense). En cas de critique, les dégâts sont doublés. Si la cible est en défense, les dégâts sont réduits.
-
-Fonctionnalités actuelles
-
-Le projet permet actuellement :
-
-le choix du nom du joueur
-
-le choix d’une arme (épée, bâton, dague)
-
-l’application des bonus d’arme dans le calcul des dégâts
-
-le choix de l’action à chaque tour (attaque ou défense)
-
-l’utilisation d’une compétence (Fireball)
-
-la gestion des coups critiques
-
-l’application d’un effet Poison sur plusieurs tours
-
-une intelligence artificielle simple pour les ennemis
-
-un affichage découplé via Observer
-
-Conclusion
-
-Ce projet démontre l’utilisation combinée de plusieurs Design Patterns dans un contexte concret de jeu tour par tour. L’architecture est modulaire, extensible et respecte les principes de séparation des responsabilités. De nouvelles fonctionnalités comme des boss à phases multiples, un inventaire, des objets consommables ou une interface graphique peuvent être ajoutées sans remettre en cause la structure existante.
-
-
-
-////////////////////////////////////////////////////////////////
-////Pour lancer le projet : ///////////////////////////////////:
-//// git clone https://github.com/hadilouakk/Aetherfall_DesignPatterns.git /////////////////////////////////:
-////sur le terminal d'un editeur de code "VS-code" par exemple lancer la commande //////////////////////////////:
-//// python main.py////////////////////////////////////////////////////////////////////////
-/// Choisir un nom /////////////////////////////////////////////////////////////////////////
-//// choisir une arme de 1 à 3 //////////////////////////////////////////////////////////////////
-/// à chaque tour on choisi si on est en defense ou en attaque  ////////////////////://
-//// 1 attaque  2 defense //////////////////////////////////////////////////////////////:
+```bash
+python -m unittest tests.test_aetherfall -v
+```
