@@ -9,6 +9,7 @@ class Stats:
     defense: int
     agility: int
     crit_chance: float
+    
 
 
 class Enemy:
@@ -20,15 +21,41 @@ class Enemy:
         self.hp_current = stats.hp_max
         self.ai = ai
         self.is_defending =False 
+        self.statuses = []
+        self.shield_points = 0
+        self.weapon = None
 
     def is_alive(self) -> bool:
         return self.hp_current > 0
     def take_damage (self, amount: int):
-        self.hp_current = max(0, self.hp_current-amount)
+        self.hp_current = max(0, self.hp_current- amount)
     def decide(self, ctx):
         if self.ai is None:
             raise ValueError("Enemy AI not set")
         return self.ai.choose_action(ctx)
+    def add_status(self, status):
+        self.statuses.append(status)
+    def apply_end_turn_statuses(self, ctx):
+       for s in self.statuses[:]:
+        s.on_end_turn(self, ctx)
+        s.tick()
+        if s.is_expired():
+            self.statuses.remove(s)
+            ctx.bus.publish("log", f"Effet terminé sur {self.name}.")
+    def equip_weapon(self, weapon):
+        self.weapon = weapon
+
+def get_atk_total(self):
+    return self.stats.atk + (self.weapon.atk_bonus if self.weapon else 0)
+
+def get_int_total(self):
+    return self.stats.intelligence + (self.weapon.int_bonus if self.weapon else 0)
+
+def get_crit_total(self):
+    return self.stats.crit_chance + (self.weapon.crit_bonus if self.weapon else 0.0)        
+
+
+
 
 
 class Wolf(Enemy):
